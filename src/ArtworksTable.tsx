@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { DataTable } from "primereact/datatable";
+import { useState, useEffect } from "react";
+import { DataTable, DataTableStateEvent } from "primereact/datatable"; // Import DataTableStateEvent type
 import { Column } from "primereact/column";
 import { Checkbox } from "primereact/checkbox";
 import { Dialog } from "primereact/dialog";
@@ -50,8 +50,9 @@ const ArtworksTable = () => {
     }
   };
 
-  const onPage = (event: { first: number; rows: number; page: number }) => {
-    setPage(event.page);
+  // Update the `onPage` function to match DataTableStateEvent type
+  const onPage = (event: DataTableStateEvent) => {
+    setPage(event.first / event.rows); // page is calculated from `first` and `rows`
     setRowsPerPage(event.rows); // Update rowsPerPage when page changes
   };
 
@@ -158,7 +159,7 @@ const ArtworksTable = () => {
         first={page * rowsPerPage}
         rows={rowsPerPage}
         totalRecords={totalRecords}
-        onPage={onPage}
+        onPage={onPage} // Use the updated onPage function here
         loading={loading}
         dataKey="id"
         selectionMode="multiple"
