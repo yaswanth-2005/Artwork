@@ -24,13 +24,13 @@ const ArtworksTable = () => {
   );
   const [page, setPage] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
-  const [rowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [showSelectionDialog, setShowSelectionDialog] = useState(false);
   const [rowsToSelect, setRowsToSelect] = useState<number>(0);
 
   useEffect(() => {
     loadArtworks();
-  }, [page]);
+  }, [page, rowsPerPage]);
 
   const loadArtworks = async () => {
     setLoading(true);
@@ -52,20 +52,75 @@ const ArtworksTable = () => {
 
   const onPage = (event: { first: number; rows: number; page: number }) => {
     setPage(event.page);
+    setRowsPerPage(event.rows); // Update rowsPerPage when page changes
   };
 
   const onSelectionChange = (e: { value: Artwork[] }) => {
-    const newSelection = new Set(e.value.map((artwork) => artwork.id));
+    const newSelection = new Set(selectedArtworks);
+    e.value.forEach((artwork) => {
+      newSelection.add(artwork.id);
+    });
     setSelectedArtworks(newSelection);
+  };
+
+  const isSelected = (artwork: Artwork) => {
+    return selectedArtworks.has(artwork.id);
   };
 
   const handleBulkSelection = () => {
     const newSelection = new Set(selectedArtworks);
-    artworks.slice(0, rowsToSelect).forEach((artwork) => {
+    const artworksToSelect = artworks.slice(0, rowsToSelect); // Only select up to the entered number
+    artworksToSelect.forEach((artwork) => {
       newSelection.add(artwork.id);
     });
     setSelectedArtworks(newSelection);
     setShowSelectionDialog(false);
+  };
+
+  const selectionColumnTemplate = (rowData: Artwork) => {
+    return (
+      <div className="flex align-items-center">
+        <Checkbox
+          checked={isSelected(rowData)}
+          onChange={() => {
+            const newSelection = new Set(selectedArtworks);
+            if (newSelection.has(rowData.id)) {
+              newSelection.delete(rowData.id);
+            } else {
+              newSelection.add(rowData.id);
+            }
+            setSelectedArtworks(newSelection);
+          }}
+        />
+      </div>
+    );
+  };
+
+  const selectionHeaderTemplate = () => {
+    return (
+      <div className="flex align-items-center">
+        <Checkbox
+          checked={
+            artworks.length > 0 &&
+            artworks.every((artwork) => isSelected(artwork))
+          }
+          onChange={(e) => {
+            const newSelection = new Set(selectedArtworks);
+            if (e.checked) {
+              artworks.forEach((artwork) => newSelection.add(artwork.id));
+            } else {
+              artworks.forEach((artwork) => newSelection.delete(artwork.id));
+            }
+            setSelectedArtworks(newSelection);
+          }}
+        />
+        <Button
+          icon="pi pi-chevron-down"
+          className="p-button-text p-button-rounded"
+          onClick={() => setShowSelectionDialog(true)}
+        />
+      </div>
+    );
   };
 
   const renderSelectionDialog = () => {
@@ -107,21 +162,13 @@ const ArtworksTable = () => {
         loading={loading}
         dataKey="id"
         selectionMode="multiple"
-        selection={artworks.filter((artwork) =>
-          selectedArtworks.has(artwork.id)
-        )}
+        selection={artworks.filter((artwork) => isSelected(artwork))}
         onSelectionChange={onSelectionChange}
       >
         <Column
-          selectionMode="multiple"
-          header={
-            <Button
-              icon="pi pi-chevron-down"
-              className="p-button-text p-button-rounded"
-              onClick={() => setShowSelectionDialog(true)}
-            />
-          }
           headerStyle={{ width: "3rem" }}
+          body={selectionColumnTemplate}
+          header={selectionHeaderTemplate}
         />
         <Column field="title" header="Title" />
         <Column field="place_of_origin" header="Place of Origin" />
